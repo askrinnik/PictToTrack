@@ -4,9 +4,9 @@ import exifr from 'exifr';
 import sharp from 'sharp';
 
 const picturesDir = resolve('Pictures');
-const thumbsDir = resolve('thumbs');
-const jsonOut = resolve('geotags.json');
-const gpxOut = resolve('track.gpx');
+const thumbsDir = resolve('result_thumbs');
+const jsonOut = resolve('result_geotags.json');
+const gpxOut = resolve('result_track.gpx');
 
 const THUMB_WIDTH = 240;
 
@@ -68,7 +68,7 @@ for (const n of nodes) {
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
       .jpeg({ quality: 70 })
       .toFile(thumbPath);
-    n.thumb = `thumbs/${thumbName}`;
+    n.thumb = `result_thumbs/${thumbName}`;
   } catch (err) {
     console.warn(`Thumb failed ${n.file}: ${err.message}`);
     n.thumb = null;

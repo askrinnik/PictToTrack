@@ -21,7 +21,7 @@ const mime = {
 const server = createServer(async (req, res) => {
   try {
     let urlPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
-    if (urlPath === '/') urlPath = '/map.html';
+    if (urlPath === '/') urlPath = '/result_map.html';
     const filePath = normalize(join(root, urlPath));
     if (!filePath.startsWith(root)) {
       res.writeHead(403).end('Forbidden');
@@ -42,5 +42,5 @@ const server = createServer(async (req, res) => {
 
 server.listen(port, () => {
   console.log(`Serving ${root}`);
-  console.log(`Open http://localhost:${port}/map.html`);
+  console.log(`Open http://localhost:${port}/result_map.html`);
 });
