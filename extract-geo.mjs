@@ -1,10 +1,14 @@
-import { readdir, writeFile } from 'node:fs/promises';
+import { readdir, writeFile, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import exifr from 'exifr';
+import sharp from 'sharp';
 
 const picturesDir = resolve('Pictures');
+const thumbsDir = resolve('thumbs');
 const jsonOut = resolve('geotags.json');
 const gpxOut = resolve('track.gpx');
+
+const THUMB_WIDTH = 240;
 
 function fmtTime(d) {
   return d instanceof Date && !isNaN(d) ? d.toISOString() : null;
@@ -53,9 +57,28 @@ nodes.sort((a, b) => {
   return a.file.localeCompare(b.file);
 });
 
+// Generate thumbnails
+await mkdir(thumbsDir, { recursive: true });
+for (const n of nodes) {
+  const thumbName = n.file.replace(/\.jpe?g$/i, '') + '.jpg';
+  const thumbPath = join(thumbsDir, thumbName);
+  try {
+    await sharp(join(picturesDir, n.file))
+      .rotate()
+      .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toFile(thumbPath);
+    n.thumb = `thumbs/${thumbName}`;
+  } catch (err) {
+    console.warn(`Thumb failed ${n.file}: ${err.message}`);
+    n.thumb = null;
+  }
+}
+
 // Write JSON
 const jsonNodes = nodes.map((n) => ({
   file: n.file,
+  thumb: n.thumb ?? null,
   latitude: n.latitude,
   longitude: n.longitude,
   altitude: n.altitude,
@@ -65,6 +88,17 @@ await writeFile(jsonOut, JSON.stringify(jsonNodes, null, 2), 'utf8');
 
 // Write GPX
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wpts = nodes
+  .map((n) => {
+    const parts = [`  <wpt lat="${n.latitude}" lon="${n.longitude}">`];
+    if (typeof n.altitude === 'number') parts.push(`    <ele>${n.altitude}</ele>`);
+    if (n.time) parts.push(`    <time>${fmtTime(n.time)}</time>`);
+    parts.push(`    <name>${esc(n.file)}</name>`);
+    parts.push(`    <sym>Camera</sym>`);
+    parts.push(`  </wpt>`);
+    return parts.join('\n');
+  })
+  .join('\n');
 const trkpts = nodes
   .map((n) => {
     const parts = [`      <trkpt lat="${n.latitude}" lon="${n.longitude}">`];
@@ -84,6 +118,7 @@ const gpx = `<?xml version="1.0" encoding="UTF-8"?>
     <name>PictToTrack</name>
     <time>${new Date().toISOString()}</time>
   </metadata>
+${wpts}
   <trk>
     <name>Photo track</name>
     <trkseg>
@@ -95,5 +130,6 @@ ${trkpts}
 await writeFile(gpxOut, gpx, 'utf8');
 
 console.log(`Photos with GPS: ${nodes.length} / ${files.length}`);
-console.log(`JSON: ${jsonOut}`);
-console.log(`GPX:  ${gpxOut}`);
+console.log(`JSON:   ${jsonOut}`);
+console.log(`GPX:    ${gpxOut}`);
+console.log(`Thumbs: ${thumbsDir}`);

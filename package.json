@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "extract": "node extract-geo.mjs",
+    "serve": "node server.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "exifr": "^7.1.3"
+    "exifr": "^7.1.3",
+    "sharp": "^0.35.3"
   }
 }
