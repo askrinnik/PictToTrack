@@ -142,12 +142,15 @@ const html = `<!DOCTYPE html>
   <style>
     html, body { margin: 0; height: 100%; }
     #layout { display: flex; height: 100%; }
-    #map { flex: 1 1 auto; height: 100%; }
-    #panel { flex: 0 0 320px; height: 100%; overflow-y: auto; box-sizing: border-box;
-      padding: 8px; background: #f4f4f4; border-left: 1px solid #ccc; }
-    #panel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .thumb-cell { position: relative; cursor: pointer; border: 2px solid transparent;
-      border-radius: 4px; overflow: hidden; background: #fff; line-height: 0; }
+    #map { flex: 1 1 auto; height: 100%; min-width: 0; }
+    #divider { flex: 0 0 6px; cursor: col-resize; background: #bbb; }
+    #divider:hover { background: #4d78ff; }
+    #panel { flex: 0 0 260px; height: 100%; overflow-y: auto; box-sizing: border-box;
+      padding: 8px; background: #f4f4f4; }
+    #panel-grid { display: grid; grid-template-columns: repeat(auto-fill, 240px);
+      justify-content: center; gap: 6px; }
+    .thumb-cell { width: 240px; position: relative; cursor: pointer; border: 2px solid transparent;
+      border-radius: 4px; overflow: hidden; background: #fff; line-height: 0; box-sizing: border-box; }
     .thumb-cell img { width: 100%; height: auto; display: block; }
     .thumb-cell:hover { border-color: #4d78ff; }
     .thumb-cell.active { border-color: #d63030; box-shadow: 0 0 0 2px rgba(214,48,48,0.4); }
@@ -167,6 +170,7 @@ const html = `<!DOCTYPE html>
 <body>
   <div id="layout">
     <div id="map"></div>
+    <div id="divider" title="Потяните, чтобы изменить размер панели"></div>
     <div id="panel"><div id="panel-grid"></div></div>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -205,6 +209,35 @@ const html = `<!DOCTYPE html>
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
+
+    // Draggable vertical divider to resize the panel
+    (function () {
+      var layout = document.getElementById("layout");
+      var divider = document.getElementById("divider");
+      var panel = document.getElementById("panel");
+      var dragging = false;
+      divider.addEventListener("mousedown", function (e) {
+        dragging = true;
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "col-resize";
+        e.preventDefault();
+      });
+      window.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        var rect = layout.getBoundingClientRect();
+        var w = rect.right - e.clientX;
+        w = Math.max(60, Math.min(w, rect.width - 100));
+        panel.style.flexBasis = w + "px";
+        map.invalidateSize();
+      });
+      window.addEventListener("mouseup", function () {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = "";
+        document.body.style.cursor = "";
+        map.invalidateSize();
+      });
+    })();
 
     var pts = NODES.filter(function (n) { return typeof n.latitude === "number" && typeof n.longitude === "number"; });
 
@@ -250,6 +283,9 @@ const html = `<!DOCTYPE html>
           cell.classList.add("active");
           map.setView([n.latitude, n.longitude], Math.max(map.getZoom(), 16), { animate: true });
           markers[i].openPopup();
+        });
+        cell.addEventListener("dblclick", function () {
+          window.open("Pictures/" + encodeURIComponent(n.file), "_blank", "noopener");
         });
         cells[i] = cell;
         grid.appendChild(cell);
