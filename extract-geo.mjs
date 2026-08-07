@@ -89,17 +89,6 @@ await writeFile(jsonOut, JSON.stringify(jsonNodes, null, 2), 'utf8');
 
 // Write GPX
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const wpts = nodes
-  .map((n) => {
-    const parts = [`  <wpt lat="${n.latitude}" lon="${n.longitude}">`];
-    if (typeof n.altitude === 'number') parts.push(`    <ele>${n.altitude}</ele>`);
-    if (n.time) parts.push(`    <time>${fmtTime(n.time)}</time>`);
-    parts.push(`    <name>${esc(n.file)}</name>`);
-    parts.push(`    <sym>Camera</sym>`);
-    parts.push(`  </wpt>`);
-    return parts.join('\n');
-  })
-  .join('\n');
 const trkpts = nodes
   .map((n) => {
     const parts = [`      <trkpt lat="${n.latitude}" lon="${n.longitude}">`];
@@ -119,7 +108,6 @@ const gpx = `<?xml version="1.0" encoding="UTF-8"?>
     <name>PictToTrack</name>
     <time>${new Date().toISOString()}</time>
   </metadata>
-${wpts}
   <trk>
     <name>Photo track</name>
     <trkseg>
